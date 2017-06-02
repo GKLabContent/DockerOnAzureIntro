@@ -1,0 +1,27 @@
+﻿
+#Challenge: Challenge: Provision a Docker developer environment in Azure       
+#Exercise: Validate your work
+#Task: Display Resources.
+
+azure resource list -g dockerdev-RG --json | grep id
+
+
+
+
+#Task: List ShipSmartService files.
+
+azure storage account list
+
+azure storage account keys list -g dockerdev-RG $account
+
+azure storage file list --share shipsmartmessages -a $account -k $key
+
+
+
+
+#Task: View contents of Registry.
+
+curl --cacert certs/domain.crt -X GET https://tswdockerdev2.eastus.cloudapp.azure.com:5000/v2/_catalog
+
+
+

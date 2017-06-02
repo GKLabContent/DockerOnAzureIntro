@@ -1,0 +1,90 @@
+﻿
+#Challenge: Challenge: Provision a Docker developer environment in Azure       
+#Exercise: Configure external storage for the ShipSmart service
+#Task: Create an Azure file share.
+
+azure storage account create -g dockerdev-rg -l <Your Azure region> -n <account name> --sku-name LRS --kind Storage
+
+azure storage account keys list –g dockerdev-rg $account 
+
+azure storage share create -a $account -k $key shipsmartmessages
+
+
+
+
+#Task: Configure a Docker volume that uses Azure storage.
+
+mkdir volumedriver
+
+cd volumedriver
+
+wget 'https://github.com/Azure/azurefile-dockervolumedriver/releases/download/v0.5.1/azurefile-dockervolumedriver'
+
+sudo cp azurefile-dockervolumedriver /usr/bin/azurefile-dockervolumedriver
+
+sudo chmod +x /usr/bin/azurefile-dockervolumedriver
+
+wget https://raw.githubusercontent.com/Azure/azurefile-dockervolumedriver/master/contrib/init/systemd/azurefile-dockervolumedriver.default
+
+wget https://raw.githubusercontent.com/Azure/azurefile-dockervolumedriver/master/contrib/init/systemd/azurefile-dockervolumedriver.service
+
+sudo cp azurefile-dockervolumedriver.default /etc/default/azurefile-dockervolumedriver
+
+sudo cp azurefile-dockervolumedriver.service /etc/systemd/system/azurefile-dockervolumedriver.service
+
+sudo nano /etc/default/azurefile-dockervolumedriver
+
+sudo systemctl daemon-reload
+
+sudo systemctl enable azurefile-dockervolumedriver
+
+sudo systemctl start azurefile-dockervolumedriver
+
+sudo systemctl status azurefile-dockervolumedriver
+
+sudo docker volume create -d azurefile --name messages -o share=shipsmartmessages
+
+sudo docker run -v messages:/data -it ubuntu bash
+
+touch /data/test
+
+echo "Test volume data" > /data/test
+
+exit
+
+sudo docker run -v messages:/data -it ubuntu bash
+
+cat /data/test
+
+exit
+
+
+
+
+#Task: Start two containers that use Azure file share.
+
+sudo docker stop $(sudo docker ps -q)
+
+sudo docker run --name service1 -d -v messages:/data -p 8080:8080 wunhill/shipsmartservice:1.0
+
+sudo docker run --name service2 -d -v messages:/data -p 8181:8080 wunhill/shipsmartservice:1.0
+
+sudo docker ps
+
+
+
+
+#Task: Test the Azure file share.
+
+azure vm show -g dockerdev-rg dockerdev1-vm | grep "Public IP"
+
+/labfiles/Client.py -a <public IP> -p 8080 -c 1
+
+/labfiles/Client.py -a <public IP> -p 8181 -c 1
+
+azure storage account keys list -g dockerdev-rg <storage account>
+
+azure storage file list --share shipsmartmessages -a $account -k $key
+
+
+

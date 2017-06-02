@@ -1,0 +1,37 @@
+﻿
+#Challenge: Challenge: Provision a Docker production environment in Azure      
+#Exercise: Provision a Docker Swarm in Azure
+#Task: Create a resource group and service principal.
+
+docker pull docker4x/create-sp-azure
+
+docker run -it docker4x/create-sp-azure dockerprod-SP dockerprod-RG <your location>
+
+
+
+
+#Task: Create public/private key pair for authentication.
+
+mkdir ~/.ssh
+
+cd ~/.ssh
+
+ssh-keygen -t rsa -b 4096
+
+chmod 700 id_rsa
+
+cat id_rsa.pub
+
+
+
+
+#Task: Connect to and test the Swarm.
+
+ssh docker@<ip address> -p 50000
+
+docker node ls
+
+docker ps
+
+
+

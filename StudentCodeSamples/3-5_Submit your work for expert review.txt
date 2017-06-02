@@ -1,0 +1,15 @@
+﻿
+#Challenge: Challenge: Provision a Docker production environment in Azure      
+#Exercise: Submit your work for expert review
+#Task: Verify data files.
+
+az login
+
+az storage account keys list -g dockerprod-RG $account
+
+az storage share list --account-name $account --account-key $key
+
+az storage file list --account-name $account --account-key $key --share $share | grep name
+
+
+

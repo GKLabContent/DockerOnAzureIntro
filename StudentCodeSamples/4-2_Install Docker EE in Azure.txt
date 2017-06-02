@@ -1,0 +1,108 @@
+﻿
+#Challenge: Challenge: Migrate Docker Enterprise Edition to Azure      
+#Exercise: Install Docker EE in Azure
+#Task: Create the service principal and resource group.
+
+docker run -ti docker4x/create-sp-azure dockereesp dockerEE-RG <your location>
+
+
+
+
+#Task: Record the public SSH key.
+
+mkdir ~/.ssh
+
+cd ~/.ssh
+
+ssh-keygen -t rsa -b 4096
+
+chmod 700 id_rsa
+
+cat ~/.ssh/id_rsa.pub
+
+
+
+
+#Task: Verify that Docker EE has successfully installed.
+
+ssh docker@<ssh ip address> -p 50000
+
+docker node ls
+
+docker service ls
+
+docker container ls
+
+
+
+
+#Task: Provision VPN gateway for on-premises network.
+
+az login
+
+az network vnet subnet create -g onprem-rg --vnet-name onprem-VNET --name GatewaySubnet --address-prefix 192.168.0.128/25
+
+az network public-ip create -g onprem-RG -l <your location> -n onprem-gway-PIP
+
+az network vnet-gateway create -g onprem-RG -l <your location> -n onprem-GWAY --public-ip-addresses onprem-gway-PIP --vnet onprem-VNET --sku basic
+
+
+
+
+#Task: Provision connections between the two networks.
+
+az network vnet-gateway list -g onprem-RG | grep id
+
+az network vnet-gateway list -g dockeree-RG | grep id
+
+az network vpn-connection create --name ee2op -g dockeree-RG --vnet-gateway1 dockerEE-GWAY -l <your location> --shared-key "ABC123" --vnet-gateway2 $opgwID
+
+azure network vpn-connection create -g onprem-RG -n ee2op -l eastus \
+
+--vnet-gateway1 onprem-GWAY \
+
+--vnet-gateway1-group onprem-RG \
+
+--vnet-gateway2 dockerEE-GWAY \
+
+--vnet-gateway2-group dockeree-RG \
+
+--type Vnet2Vnet \
+
+--shared-key ABC123
+
+
+
+
+#Task: Add on-premises Docker host to the Docker swarm.
+
+az network public-ip show -g onprem-RG -n onpremhost-PIP | grep ipAddress
+
+ssh student@<ip address>
+
+docker swarm join --token <unique token> <ip address>:2377
+
+
+
+
+#Task: Run the Wunhill container services.
+
+ssh docker@<ssh ip address> -p 50000
+
+docker service create --name shipsmartsvc --replicas 3 --publish 8080:8080 wunhill/shipsmartservice:1.0
+
+docker service create --name shipsmartweb --publish 80:80 wunhill/shipsmartweb:1.0
+
+docker service ls
+
+docker service ps shipsmartsvc
+
+
+
+
+#Task: Test Access to the services.
+
+./Client.py -a <DNS target IP address> -p 8080 -c 1
+
+
+

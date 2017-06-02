@@ -1,0 +1,76 @@
+﻿
+#Challenge: Challenge: Provision a Docker developer environment in Azure       
+#Exercise: Provision a Docker Registry
+#Task: Copy SSH keys.
+
+azure vm show –g dockerdev-RG dockerdev1-VM | grep “Public IP”
+
+scp ~/.ssh/id_rsa student@<Public IP>:/home/student
+
+ssh student@<public IP>
+
+mv ~/id_rsa ~/.ssh/id_rsa
+
+exit
+
+
+
+
+#Task: Create and register a self-signed certificate.
+
+azure vm show –g dockerdev-RG dockerdev2-VM
+
+mkdir ~/certs
+
+cd ~/certs
+
+openssl req -newkey rsa:2048 -nodes -sha256 -keyout domain.key -x509 -days 365 -out domain.crt
+
+sudo mkdir /etc/docker/certs.d/<FQDN>:5000 -p
+
+sudo cp ~/certs/domain.crt /etc/docker/certs.d/<FQDN>:5000/ca.crt
+
+sudo /etc/init.d/docker restart
+
+sudo scp -i /home/student/.ssh/id_rsa /etc/docker/certs.d/<FQDN>:5000/ca.crt student@10.0.0.4:/home/student
+
+
+
+
+#Task: Provision a Docker registry on dockerdev2-VM.
+
+sudo docker run -d -p 5000:5000 --name registry -v $(pwd)/certs:/certs \
+
+-e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \
+
+-e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+
+registry:2.5
+
+sudo docker pull wunhill/shipsmartservice:1.0
+
+sudo docker tag wunhill/shipsmartservice:1.0 <FQDN>:5000/shipsmartservice:1.0
+
+sudo docker push <FQDN>:5000/shipsmartservice:1.0
+
+
+
+
+#Task: Pull image from the registry onto dockerdev1-VM.
+
+sudo mkdir /etc/docker/certs.d/<FQDN>:5000 -p
+
+sudo cp ca.crt /etc/docker/certs.d/<FQDN>:5000/ca.crt
+
+sudo /etc/init.d/docker restart
+
+sudo docker stop $(sudo docker ps –q)
+
+sudo docker image rm -f $(sudo docker images -q)
+
+sudo docker run -d <FQDN>:5000/shipsmartservice:1.0
+
+sudo docker ps
+
+
+

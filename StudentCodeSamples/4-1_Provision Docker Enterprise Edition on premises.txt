@@ -1,0 +1,74 @@
+﻿
+#Challenge: Challenge: Migrate Docker Enterprise Edition to Azure      
+#Exercise: Provision Docker Enterprise Edition on premises
+#Task: Log in to Azure CLI tools.
+
+azure login
+
+azure account list
+
+azure account set <ID of correct subscription>
+
+
+
+
+#Task: Create public/private key pair for authentication.
+
+mkdir ~/.ssh
+
+chmod 700 ~/.ssh
+
+ssh-keygen -b 4098
+
+
+
+
+#Task: Edit and execute the challenge-ee.sh script.
+
+nano /labfiles/challenge-ee.sh
+
+sh /labfiles/docker-ee.sh
+
+azure network public-ip list -g onprem-RG
+
+
+
+
+#Task: Install Docker EE on on-premises Docker EE host.
+
+azure vm show –g onprem-RG onpremee-VM
+
+ssh student@<IP address>
+
+curl -SLf https://packages.docker.com/1.13/install.sh  | sh
+
+sudo docker run --rm -it --name ucp \
+
+  -v /var/run/docker.sock:/var/run/docker.sock \
+
+  docker/ucp:2.1.3 install \
+
+  --host-address 192.168.0.5 \
+
+  --interactive
+
+
+
+
+#Task: Join Azure host to Docker EE Swarm.
+
+azure vm show -g onprem-rg azurehost-vm | grep "Public IP"
+
+ssh student@<IP address>
+
+
+
+
+#Task: Test a Docker Swarm service.
+
+sudo docker service create -p 81:80  ---name shipsmartweb --replicas 2 wunhill/shipsmartweb:1.0
+
+sudo docker service ps shipsmartweb
+
+
+

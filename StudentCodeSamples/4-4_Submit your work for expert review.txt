@@ -1,0 +1,18 @@
+﻿
+#Challenge: Challenge: Migrate Docker Enterprise Edition to Azure      
+#Exercise: Submit your work for expert review
+#Task: Display replicas for ShipSmart web application.
+
+ssh student@<public IP for onpremee-PIP>
+
+sudo docker service ps shipsmartweb
+
+
+
+
+#Task: Display the output of the ShipSmartService.
+
+/labfiles/Client.py -a <DNS target IP address> -p 8080 -c 1
+
+
+

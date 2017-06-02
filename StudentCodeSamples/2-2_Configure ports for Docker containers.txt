@@ -1,0 +1,39 @@
+﻿
+#Challenge: Challenge: Provision a Docker developer environment in Azure       
+#Exercise: Configure ports for Docker containers
+#Task: Connect to dockerdev1-VM via SSH.
+
+azure vm list -g dockerdev-RG
+
+azure vm start -g dockerdev-RG dockerdev1-VM
+
+azure vm show -g dockerdev-RG dockerdev1-VM | grep "Public IP"
+
+ssh student@<public IP address>
+
+
+
+
+#Task: Run the Docker containers.
+
+sudo docker stop $(sudo docker ps -q)
+
+sudo docker run -d --name webserver -p 80:80 wunhill/shipsmartweb:1.0
+
+sudo docker run -d --name service -p 8080:8080 wunhill/shipsmartservice:1.0
+
+sudo docker ps
+
+
+
+
+#Task: Test access to the containers.
+
+azure vm show -g dockerdev-RG dockerdev1-VM | grep "Public IP"
+
+curl "http://<public IP address>/test.html"
+
+/labfiles/Client.py -a 52.179.14.41 -p 8080 -c 1
+
+
+

@@ -1,0 +1,145 @@
+﻿
+#Challenge: Challenge: Provision a Docker developer environment in Azure       
+#Exercise: Provision Docker virtual machines in Azure
+#Task: Log in to Azure CLI tools.
+
+azure login
+
+azure account list
+
+azure account set <ID of correct subscription>
+
+
+
+
+#Task: Create resource group.
+
+azure location list
+
+azure group create -l <Your Azure region> dockerdev-RG
+
+
+
+
+#Task: Create virtual network.
+
+azure network vnet create -g dockerdev-RG -l <Your Azure region> -n dockerdev-VNET -a 10.0.0.0/16
+
+azure network vnet subnet create -g dockerdev-RG -e dockerdev-VNET -n hosts -a 10.0.0.0/24
+
+
+
+
+#Task: Provision storage.
+
+azure storage account create -g dockerdev-RG -l <your Azure location> --sku-name LRS --kind storage <storage account name>
+
+
+
+
+#Task: Create public/private key pair for authentication.
+
+mkdir ~/.ssh
+
+chmod 700 ~/.ssh
+
+ssh-keygen -b 4098
+
+
+
+
+#Task: Create virtual machine.
+
+azure network public-ip create -g dockerdev-RG -l <Your Azure region> -n dockerdev1-PIP
+
+azure network nic create -g dockerdev-RG -l <Your Azure region> -n dockerdev1-NIC -k hosts -m dockerdev-VNET -p dockerdev1-PIP
+
+azure vm image list-skus <Your Azure region> canonical ubuntuserver
+
+azure vm create -g dockerdev-RG -l <Your Azure region> \
+
+--name dockerdev1-VM \
+
+--nic-name dockerdev1-NIC \
+
+--os-type Linux \
+
+--image-urn canonical:ubuntuserver:16.04-LTS:latest \
+
+--admin-username student \
+
+--ssh-publickey-file ~/.ssh/id_rsa.pub \
+
+--vm-size STANDARD_A1_V2 \
+
+--storage-account-name <storage account name>
+
+
+
+
+#Task: Install and test Docker.
+
+azure vm show -g dockerdev-RG dockerdev1-VM | grep "Public IP address"
+
+ssh student@<Public IP address>
+
+sudo apt-get update
+
+sudo apt-get install -y linux-image-extra-$(uname -r) linux-image-extra-virtual
+
+sudo apt-get install -y apt-transport-https  ca-certificates  curl  software-properties-common
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add –
+
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+sudo apt-get update
+
+sudo apt-get install -y docker-ce
+
+sudo docker run -it hello-world
+
+
+
+
+#Task: Create another VM with the Docker extension.
+
+azure network public-ip create -g dockerdev-RG -l <Your Azure region> -n dockerdev2-PIP --allocation-method Static –d <a unique domain name prefix>
+
+azure network nic create -g dockerdev-RG -l <Your Azure region> -n dockerdev2-NIC -k hosts -m dockerdev-VNET -p dockerdev2-PIP
+
+azure vm image list-skus <Your Azure region> canonical ubuntuserver
+
+azure vm docker create -g dockerdev-rg -n dockerdev2-VM \
+
+--docker-cert-dir . \
+
+--nic-name dockerdev2-NIC \
+
+--location <Your Azure region> \
+
+--os-type Linux \
+
+--image-urn canonical:ubuntuserver:16.04-LTS:latest \
+
+--admin-username student \
+
+--ssh-publickey-file ~/.ssh/id_rsa.pub \
+
+--vm-size STANDARD_A1_V2 \
+
+--storage-account-name <storage account name>
+
+
+
+
+#Task: Test Docker on the second VM.
+
+azure vm show –g dockerdev-RG dockerdev2-VM | grep “Public IP address”
+
+ssh student@<ip address>
+
+sudo docker run hello-world
+
+
+
